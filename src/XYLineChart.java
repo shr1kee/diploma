@@ -8,15 +8,16 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
+import java.util.*;
+import java.util.List;
 
 /**
  * Created by Acer on 17.04.2018.
  */
 public class XYLineChart extends JFrame {
-    ArrayList<Double> x;
-    ArrayList<Double> y;
-    public XYLineChart(ArrayList<Double> x,ArrayList<Double> y) {
+    List<Double> x;
+    List<Double> y;
+    public XYLineChart(ArrayList<Double> x, java.util.List<Double> y) {
         super("Зависимость D От показателя Гельдера");
         this.x=x;
         this.y=y;

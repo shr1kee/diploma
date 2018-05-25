@@ -12,7 +12,7 @@ import java.util.List;
 
 public class Main  {
     static boolean[][] used;
-    static double delta = 0.2;
+    static double delta = 0.04;
     static double[][] herold;
     static double[][] components;
     static int[][] componentsNum;
@@ -27,11 +27,18 @@ public class Main  {
     static WritableRaster raster;
     static Map<Integer,Integer[]> kDMap;
     public static void main(String[] args) throws IOException {
-        File f = new File("C:\\Users\\Acer\\Desktop\\test2.jpg");
+//        File f = new File("C:\\Users\\Acer\\Desktop\\test2.jpg");
 //        File f = new File("C:\\Users\\Acer\\Desktop\\herold.png");
+        File f = new File("Moscow.jpg");
         init(f);
         toGray(img);
         Herold(grayscaleIm);
+//        for (int i = 0; i <height ; i++) {
+//            for (int j = 0; j <width ; j++) {
+//                System.out.print(herold[i][j]+" ");
+//            }
+//            System.out.println();
+//        }
         runBfs();
         kDMap = new HashMap<>(komp.size());
         Integer[] a = new Integer[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -41,11 +48,11 @@ public class Main  {
 //        for (int i = 0; i <width ; i++) {
 //            System.out.print(i+" ");
 //        }
-//        System.out.println();
+////        System.out.println();
 //        for (int i = 0; i <height ; i++) {
 //            //System.out.print(i+" ");
 //            for (int j = 0; j <width ; j++) {
-//                System.out.print(componentsNum[i][j]+" ");
+//                System.out.print(herold[i][j]+" ");
 //            }
 //            System.out.println();
 //        }
@@ -70,7 +77,7 @@ public class Main  {
 
     }
     public static void countD(){
-        int rmax = 10;
+        int rmax = 9;
         double[] regX = new double[rmax+1];
         double[] regY = new double[rmax+1];
         for (int i = 0; i <kDMap.size() ; i++) {
@@ -81,7 +88,6 @@ public class Main  {
                 regY[r] = Math.log(kDMap.get(i)[r]);
                 regression.addData(regX[r],regY[r]);
             }
-           // System.out.println("k "+komp.get(i)+" slope "+(-regression.getSlope()));
             Dvalue.add(-regression.getSlope());
         }
     }
@@ -100,7 +106,7 @@ public class Main  {
         }
     }
     public static void countSqueres(){
-        int rmax = 10;
+        int rmax = 9;
         for (int r = 1; r <=rmax ; r++) {
             for (int i = 0; i <height ; i+=r) {
                 for (int j = 0; j < width; j+=r) {
@@ -128,59 +134,23 @@ public class Main  {
             }
         }
     }
-    public static void bfs(int k,double a,int x,int y){
+    public static void bfs(int k,double a,int x,int y)
+    {
         used[x][y] = true;
         components[x][y] = a;
         componentsNum[x][y] = k;
-        for (int i = 0; i <height ; i++) {
-            for (int j = 0; j <width ; j++) {
-                if(used[i][j]!=true && Math.abs(herold[i][j]-a)<delta){
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                if (used[i][j] != true && Math.abs(herold[i][j] - a) < delta) {
                     used[i][j] = true;
                     components[i][j] = a;
-                    componentsNum[i][j]=k;
+                    componentsNum[i][j] = k;
                 }
 
             }
         }
-//        int[] xy = new int[]{x,y};
-//        ArrayDeque<int[]> q = new ArrayDeque<>();
-//        q.addLast(xy);
-//        while(!q.isEmpty())
-//        {
-//            int[] v = q.pop();
-//
-//
-//                if(v[0]-1>=0 && !used[v[0]-1][v[1]] &&Math.abs(herold[v[0]-1][v[1]]-a)<=delta)
-//                {
-//                    used[v[0]-1][v[1]] = true;
-//                    components[v[0]-1][v[1]] = a;
-//                    componentsNum[v[0]-1][v[1]] = k;
-//                    q.addLast(new int[]{v[0] - 1, v[1]});
-//                }
-//                if(v[0]+1<height && !used[v[0]+1][v[1]] &&Math.abs(herold[v[0]+1][v[1]]-a)<=delta)
-//                {
-//                    used[v[0]+1][v[1]] = true;
-//                    components[v[0]+1][v[1]] = a;
-//                    componentsNum[v[0]+1][v[1]] = k;
-//                    q.addLast(new int[]{v[0]+1, v[1]});
-//                }
-//                if(v[1]-1>=0 && !used[v[0]][v[1]-1] &&Math.abs(herold[v[0]][v[1]-1]-a)<=delta)
-//                {
-//                    used[v[0]][v[1]-1] = true;
-//                    components[v[0]][v[1]-1] = a;
-//                    componentsNum[v[0]][v[1]-1] = k;
-//                    q.addLast(new int[]{v[0], v[1]-1});
-//                }
-//                if(v[1]+1<width && !used[v[0]][v[1]+1] &&Math.abs(herold[v[0]][v[1]+1]-a)<=delta)
-//                {
-//                    used[v[0]][v[1]+1] = true;
-//                    components[v[0]][v[1]+1] = a;
-//                    componentsNum[v[0]][v[1]+1] = k;
-//                    q.addLast(new int[]{v[0], v[1]+1});
-//                }
-//        }
-
     }
+
     public static void init(File f) {
         try {
             img = ImageIO.read(f);
@@ -218,53 +188,44 @@ public class Main  {
             }
         }
     }
-    public static void Herold(int[][] im)
+    public static void Herold(int[][] im)//im - исходное изображение
     {
-        int rmax = 10;
-        int h = im.length;
-        int w = im[0].length;
+        int rmax = 5;//максимальный радиус окна
+        int h = im.length;//длина изображения
+        int w = im[0].length;//ширина изображения
         double[] regX = new double[rmax+1];
         double[] regY = new double[rmax+1];
         for(int i=0; i<=rmax;i++)
-        {
-           // regX[i]=Math.log(i*2+1);
             regX[i] = Math.log(i+1);
-        }
         for(int i = 0; i < h; i++)
         {
             for(int j = 0; j < w; j++)
             {
-                regY[0] =1;
-                for(int r =1; r <= rmax; r++)
-                {
+                regY[0] = im[i][j];
+                if(im[i][j]==0)
+                    regY[0] = 1;
+                for(int r =1; r <= rmax; r++) {
                     regY[r] = regY[r-1];
                     int c;
-                    if(i - r >=0)
-                    {
+                    if(i - r >=0) {
                         c = im[i-r][j];
-                        //regY[r]++;
                         regY[r]+=c;
                     }
                     if(j-r>=0){
-
                         c = im[i][j-r];
                         regY[r]+=c;
                     }
-                    if(i+r < h)
-                    {
+                    if(i+r < h) {
                         c = im[i+r][j];
                         regY[r]+=c;
                     }
-                    if(j+r<w)
-                    {
+                    if(j+r<w) {
                         c = im[i][j+r];
                         regY[r]+=c;
                     }
                 }
-
-
                 SimpleRegression regression = new SimpleRegression();
-                for(int r =0; r<rmax; r++) {
+                for(int r =0; r<=rmax; r++) {
                     regY[r] = Math.log(regY[r]);
                     regression.addData(regX[r],regY[r]);
                 }
@@ -273,6 +234,7 @@ public class Main  {
 
         }
     }
+
 
 
 }

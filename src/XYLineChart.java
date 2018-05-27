@@ -1,3 +1,5 @@
+import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
+import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -8,15 +10,19 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Acer on 17.04.2018.
  */
 public class XYLineChart extends JFrame {
-    List<Double> x;
-    List<Double> y;
+    static List<Double> x;
+    static List<Double> y;
+    static double[] xd;
+    static double[] yd;
+    static List<Double> yi;
+    static List<Double> xi = new ArrayList<>();
     public XYLineChart(ArrayList<Double> x, java.util.List<Double> y) {
         super("Зависимость D От показателя Гельдера");
         this.x=x;
@@ -27,11 +33,57 @@ public class XYLineChart extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
     }
+    public static ArrayList<Double> linearInterp(double[] x, double[] y, double min,double max) {
+        SplineInterpolator li = new SplineInterpolator(); // or other interpolator
+        PolynomialSplineFunction psf = li.interpolate(x, y);
+        ArrayList<Double> yi  = new ArrayList<>();
+        for (double i =min ; i < max; i+=0.01) {
+            yi.add(psf.value(i));
+        }
+        return yi;
+    }
+    public static void bubbleSort(){
+    /*Внешний цикл каждый раз сокращает фрагмент массива,
+      так как внутренний цикл каждый раз ставит в конец
+      фрагмента максимальный элемент*/
+        for(int i = xd.length-1 ; i > 0 ; i--){
+            for(int j = 0 ; j < i ; j++){
+            /*Сравниваем элементы попарно,
+              если они имеют неправильный порядок,
+              то меняем местами*/
+            if( xd[j] > xd[j+1] ){
+                double tmpx = xd[j];
+                xd[j] = xd[j+1];
+                xd[j+1] = tmpx;
+                double tmpy = yd[j];
+                yd[j] = yd[j+1];
+                yd[j+1] = tmpy;
+            }
+        }
+    }
+}
     private XYDataset createDataset() {
         XYSeriesCollection dataset = new XYSeriesCollection();
         XYSeries series1 = new XYSeries("Object 1");
+        xd =new double[x.size()];
+        yd = new double[y.size()];
+        double minX =1000;
+        double maxX = 0;
         for (int i = 0; i <x.size() ; i++) {
-            series1.add(x.get(i),y.get(i));
+            xd[i]=x.get(i);
+            yd[i] = y.get(i);
+            if(x.get(i)>maxX)
+                maxX = x.get(i);
+            if(x.get(i)<minX)
+                minX = x.get(i);
+        }
+        bubbleSort();
+        for (double i = minX; i <maxX ; i+=0.01) {
+            xi.add(i);
+        }
+        yi= linearInterp(xd,yd,minX,maxX);
+        for (int i = 0; i <xi.size() ; i++) {
+            series1.add(xi.get(i),yi.get(i));
         }
         dataset.addSeries(series1);
         return dataset;

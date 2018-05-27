@@ -8,17 +8,19 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.List;
 
 public class Main  {
     static boolean[][] used;
-    static double delta = 0.04;
+    //0.2 запомни!1111!!!
+    static double delta = 0.05;
     static double[][] herold;
     static double[][] components;
     static int[][] componentsNum;
     static ArrayList<Double> Dvalue = new ArrayList<>();
     static ArrayList<Double> komp = new ArrayList<>();
-    static List<Double> finalD = new ArrayList<>();
+    static ArrayList<Double> finalD = new ArrayList<>();
+    static ArrayList<Double> fKomp = new ArrayList<>();
+
     static int width = 4;
     static int height = 3;
     static BufferedImage img;
@@ -26,9 +28,10 @@ public class Main  {
     static BufferedImage bi;
     static WritableRaster raster;
     static Map<Integer,Integer[]> kDMap;
+    static int rH = 10;//при подсчете Гельдера
     public static void main(String[] args) throws IOException {
 //        File f = new File("C:\\Users\\Acer\\Desktop\\test2.jpg");
-//        File f = new File("C:\\Users\\Acer\\Desktop\\herold.png");
+//        File f = new File("C:\\Users\\Acer\\Desktop\\small.png");
         File f = new File("Moscow.jpg");
         init(f);
         toGray(img);
@@ -45,18 +48,6 @@ public class Main  {
         for (int i = 0; i < komp.size(); i++) {
             kDMap.put(i,a);
         }
-//        for (int i = 0; i <width ; i++) {
-//            System.out.print(i+" ");
-//        }
-////        System.out.println();
-//        for (int i = 0; i <height ; i++) {
-//            //System.out.print(i+" ");
-//            for (int j = 0; j <width ; j++) {
-//                System.out.print(herold[i][j]+" ");
-//            }
-//            System.out.println();
-//        }
-
         countSqueres();
         countD();
         System.out.println("Size komp: "+komp.size());
@@ -71,24 +62,38 @@ public class Main  {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new XYLineChart(komp,Dvalue).setVisible(true);
+                new XYLineChart(fKomp,finalD).setVisible(true);
             }
         });
 
     }
     public static void countD(){
-        int rmax = 9;
+        int rmax = 15;
         double[] regX = new double[rmax+1];
         double[] regY = new double[rmax+1];
         for (int i = 0; i <kDMap.size() ; i++) {
             SimpleRegression regression = new SimpleRegression();
+//            System.out.println("regY[0] "+regY[0]);
+            regY[0] = 100000;
             for(int r=1; r<=rmax;r++) {
                 regX[r] = Math.log(r + 1);
                // System.out.println("i "+i+"kDmap "+kDMap.get(i)[r]);
-                regY[r] = Math.log(kDMap.get(i)[r]);
-                regression.addData(regX[r],regY[r]);
+//                System.out.print(kDMap.get(i)[r]+" ");
+                regY[r] = kDMap.get(i)[r];
+
+                if(regY[r]<regY[r-1]){
+                    double m = Math.log(kDMap.get(i)[r]);
+                    System.out.print(kDMap.get(i)[r]+" ");
+                    regression.addData(regX[r],m);
+                }
+
             }
-            Dvalue.add(-regression.getSlope());
+            System.out.println();
+            if(-regression.getSlope()<3)
+            {
+                fKomp.add(komp.get(i));
+                finalD.add(-regression.getSlope());
+            }
         }
     }
     public static void checkSq(int r,int i1,int i2,int j1,int j2){
@@ -106,10 +111,10 @@ public class Main  {
         }
     }
     public static void countSqueres(){
-        int rmax = 9;
+        int rmax = 15;
         for (int r = 1; r <=rmax ; r++) {
-            for (int i = 0; i <height ; i+=r) {
-                for (int j = 0; j < width; j+=r) {
+            for (int i = rH; i <height-rmax; i+=r) {
+                for (int j = rH; j < width-rmax; j+=r) {
                     if(i+r>height&&j+r>width)
                         checkSq(r,i,height,j,width);
                     else if(i+r>height)
@@ -124,8 +129,8 @@ public class Main  {
     }
     public static void runBfs(){
         int k = 0;
-        for (int i = 0; i <height ; i++) {
-            for (int j = 0; j <width ; j++) {
+        for (int i = rH; i <height; i++) {
+            for (int j = rH; j <width; j++) {
                 if(!used[i][j]){
                     komp.add(herold[i][j]);
                     bfs(k,herold[i][j],i,j);
@@ -133,14 +138,15 @@ public class Main  {
                 }
             }
         }
+
     }
     public static void bfs(int k,double a,int x,int y)
     {
         used[x][y] = true;
         components[x][y] = a;
         componentsNum[x][y] = k;
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
+        for (int i = rH; i < height; i++) {
+            for (int j = rH; j < width; j++) {
                 if (used[i][j] != true && Math.abs(herold[i][j] - a) < delta) {
                     used[i][j] = true;
                     components[i][j] = a;
@@ -149,6 +155,7 @@ public class Main  {
 
             }
         }
+
     }
 
     public static void init(File f) {
@@ -190,21 +197,21 @@ public class Main  {
     }
     public static void Herold(int[][] im)//im - исходное изображение
     {
-        int rmax = 5;//максимальный радиус окна
-        int h = im.length;//длина изображения
-        int w = im[0].length;//ширина изображения
-        double[] regX = new double[rmax+1];
-        double[] regY = new double[rmax+1];
-        for(int i=0; i<=rmax;i++)
+
+        height-=rH;
+        width-=rH;
+        double[] regX = new double[rH+1];
+        double[] regY = new double[rH+1];
+        for(int i=0; i<=rH;i++)
             regX[i] = Math.log(i+1);
-        for(int i = 0; i < h; i++)
+        for(int i = rH; i < height; i++)
         {
-            for(int j = 0; j < w; j++)
+            for(int j = rH; j < width; j++)
             {
                 regY[0] = im[i][j];
                 if(im[i][j]==0)
                     regY[0] = 1;
-                for(int r =1; r <= rmax; r++) {
+                for(int r =1; r <= rH; r++) {
                     regY[r] = regY[r-1];
                     int c;
                     if(i - r >=0) {
@@ -215,17 +222,17 @@ public class Main  {
                         c = im[i][j-r];
                         regY[r]+=c;
                     }
-                    if(i+r < h) {
+                    if(i+r < height) {
                         c = im[i+r][j];
                         regY[r]+=c;
                     }
-                    if(j+r<w) {
+                    if(j+r<width) {
                         c = im[i][j+r];
                         regY[r]+=c;
                     }
                 }
                 SimpleRegression regression = new SimpleRegression();
-                for(int r =0; r<=rmax; r++) {
+                for(int r =0; r<=rH; r++) {
                     regY[r] = Math.log(regY[r]);
                     regression.addData(regX[r],regY[r]);
                 }
@@ -233,6 +240,7 @@ public class Main  {
             }
 
         }
+
     }
 
 

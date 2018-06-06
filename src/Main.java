@@ -2,7 +2,6 @@ import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.io.File;
@@ -12,15 +11,14 @@ import java.util.*;
 public class Main  {
     static boolean[][] used;
     //0.2 запомни!1111!!!
-    static double delta = 0.05;
+    static double delta = 0.24;
     static double[][] herold;
     static double[][] components;
     static int[][] componentsNum;
-    static ArrayList<Double> Dvalue = new ArrayList<>();
     static ArrayList<Double> komp = new ArrayList<>();
     static ArrayList<Double> finalD = new ArrayList<>();
     static ArrayList<Double> fKomp = new ArrayList<>();
-
+    static double maxC = 0;
     static int width = 4;
     static int height = 3;
     static BufferedImage img;
@@ -28,11 +26,11 @@ public class Main  {
     static BufferedImage bi;
     static WritableRaster raster;
     static Map<Integer,Integer[]> kDMap;
-    static int rH = 10;//при подсчете Гельдера
+    static int rH = 7;//при подсчете Гельдера
     public static void main(String[] args) throws IOException {
 //        File f = new File("C:\\Users\\Acer\\Desktop\\test2.jpg");
 //        File f = new File("C:\\Users\\Acer\\Desktop\\small.png");
-        File f = new File("Moscow.jpg");
+        File f = new File("serp.png");
         init(f);
         toGray(img);
         Herold(grayscaleIm);
@@ -53,7 +51,7 @@ public class Main  {
         System.out.println("Size komp: "+komp.size());
         for (int i = 0; i <height ; i++) {
             for (int j = 0; j < width; j++) {
-                int m = (int) (255 * components[i][j] / 2);
+                int m = (int) (255 * components[i][j] / maxC);
                 raster.setSample(j, i, 0, m);
             }
         }//        selectD();
@@ -89,8 +87,9 @@ public class Main  {
 
             }
             System.out.println();
-            if(-regression.getSlope()<3)
+            if((-regression.getSlope()<3) && (-regression.getSlope()>0.74))
             {
+                System.out.println(-regression.getSlope());
                 fKomp.add(komp.get(i));
                 finalD.add(-regression.getSlope());
             }
@@ -131,31 +130,30 @@ public class Main  {
         int k = 0;
         for (int i = rH; i <height; i++) {
             for (int j = rH; j <width; j++) {
-                if(!used[i][j]){
+                if(!used[i][j]){// проверяем, рассматривался ли пиксель ранее
+                    // если нет, значит нашли новый класс
                     komp.add(herold[i][j]);
-                    bfs(k,herold[i][j],i,j);
+                    bfs(k,herold[i][j],i,j);//запускаем поиск точек, принадлежащих этому же классу
                     k++;
                 }
             }
         }
-
     }
     public static void bfs(int k,double a,int x,int y)
     {
-        used[x][y] = true;
-        components[x][y] = a;
+        used[x][y] = true;// помечаем пиксель, как рассмотренный
         componentsNum[x][y] = k;
         for (int i = rH; i < height; i++) {
             for (int j = rH; j < width; j++) {
-                if (used[i][j] != true && Math.abs(herold[i][j] - a) < delta) {
-                    used[i][j] = true;
-                    components[i][j] = a;
+                if (used[i][j] != true && Math.abs(herold[i][j] - a) < delta) {//проверяем условие
+                    used[i][j] = true;// помечаем, как просмотренный
+                    components[i][j] = a;//заменяем значение показателя Гельдера
                     componentsNum[i][j] = k;
                 }
-
             }
         }
-
+        if(a>maxC)
+            maxC = a;
     }
 
     public static void init(File f) {
@@ -176,7 +174,7 @@ public class Main  {
         raster = bi.getRaster();
 
     }
-    public static void toGray(BufferedImage img){
+    public static void toGray(BufferedImage img) throws IOException {
         for(int i =0; i<height; i++)
         {
             for (int j = 0; j <width ; j++){
@@ -185,19 +183,25 @@ public class Main  {
                 int r = (p>>16)&0xff;
                 int g = (p>>8)&0xff;
                 int b = p&0xff;
-                int avg = (r+g+b)/3;
-                p = (a<<24) | (avg<<16) | (avg<<8) | avg;
-                img.setRGB(j, i, p);
-                Color mycolor = new Color(img.getRGB(j,i));
-                int c= mycolor.getRed();
-                grayscaleIm[i][j] =  c;
+                int avg = (int) (0.2989*r+0.587*g+0.114*b);
+//                int avg = (int) ((r+g+b)/3.0);
+
+                if(i==4 && j ==4){
+                    System.out.println("avg "+avg);
+                }
+                grayscaleIm[i][j] =  avg;
                 used[i][j] = false;
             }
         }
+//        for (int i = 0; i <height ; i++) {
+//            for (int j = 0; j <width ; j++) {
+//                raster.setSample(j,i,0,grayscaleIm[i][j]);
+//            }
+//        }
+//        ImageIO.write(bi,"jpg", new File("C:\\Users\\Acer\\Desktop\\gray.jpg"));
     }
     public static void Herold(int[][] im)//im - исходное изображение
     {
-
         height-=rH;
         width-=rH;
         double[] regX = new double[rH+1];
@@ -232,6 +236,8 @@ public class Main  {
                     }
                 }
                 SimpleRegression regression = new SimpleRegression();
+                ArrayList<Double> xl = new ArrayList<>();
+                ArrayList<Double> yl = new ArrayList<>();
                 for(int r =0; r<=rH; r++) {
                     regY[r] = Math.log(regY[r]);
                     regression.addData(regX[r],regY[r]);

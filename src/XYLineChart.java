@@ -23,8 +23,10 @@ public class XYLineChart extends JFrame {
     static double[] yd;
     static List<Double> yi;
     static List<Double> xi = new ArrayList<>();
+    static double step = 0.05;
     public XYLineChart(ArrayList<Double> x, java.util.List<Double> y) {
-        super("Зависимость D От показателя Гельдера");
+//        super("Зависимость D От показателя Гельдера");
+        super("Зависимость lnI от lnR");
         this.x=x;
         this.y=y;
         JPanel chartPanel = createChartPanel();
@@ -37,7 +39,7 @@ public class XYLineChart extends JFrame {
         SplineInterpolator li = new SplineInterpolator(); // or other interpolator
         PolynomialSplineFunction psf = li.interpolate(x, y);
         ArrayList<Double> yi  = new ArrayList<>();
-        for (double i =min ; i < max; i+=0.01) {
+        for (double i =min ; i < max; i+=step) {
             yi.add(psf.value(i));
         }
         return yi;
@@ -78,20 +80,23 @@ public class XYLineChart extends JFrame {
                 minX = x.get(i);
         }
         bubbleSort();
-        for (double i = minX; i <maxX ; i+=0.01) {
+        for (double i = minX; i <maxX ; i+=step) {
             xi.add(i);
         }
         yi= linearInterp(xd,yd,minX,maxX);
         for (int i = 0; i <xi.size() ; i++) {
             series1.add(xi.get(i),yi.get(i));
         }
+//        for (int i = 0; i <x.size() ; i++) {
+//            series1.add(x.get(i),y.get(i));
+//        }
         dataset.addSeries(series1);
         return dataset;
     }
     private JPanel createChartPanel() {
         String title = "Зависимость D от показателя Гельдера";
-        String xAxisLabel = "Показатель Гельдера";
-        String yAxisLabel = "Размерность";
+        String xAxisLabel = "показатель Гельдера";
+        String yAxisLabel = "фрактальная размерность";
         XYDataset dataset = createDataset();
         boolean showLegend = false;
         boolean createURL = false;
